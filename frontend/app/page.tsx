@@ -77,9 +77,19 @@ export default function Home() {
             </div>
 
             {backendStatus && (
-              <div className="mt-4 rounded-lg bg-gray-50 p-4 text-sm">
-                Backend response:{" "}
-                <span className="font-semibold">{backendStatus}</span>
+              <div
+                className={`mt-4 rounded-lg p-4 text-sm ${
+                  backendStatus === "ok"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-700"
+                }`}
+              >
+                <p>
+                  Backend:{" "}
+                  <span className="font-semibold">
+                    {backendStatus === "ok" ? "Connected" : "Unavailable"}
+                  </span>
+                </p>
               </div>
             )}
           </div>
