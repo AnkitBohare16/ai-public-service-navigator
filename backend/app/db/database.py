@@ -32,3 +32,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+from app.models.chunk import Chunk
+from app.models.document import Document, DocumentVersion
+from app.models.source import Source
