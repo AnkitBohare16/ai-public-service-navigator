@@ -3,6 +3,7 @@ from sqlalchemy import select
 
 from app.db.database import SessionLocal
 from app.ingestion.pipeline import IngestionPipeline
+from app.models.chunk import Chunk
 from app.models.document import DocumentVersion
 from app.models.source import Source
 
@@ -56,8 +57,16 @@ def test_ingestion_pipeline_loads_parses_and_persists_html(
             title="Address Change Guide",
         )
 
+        # ---------------------------------------------------------
+        # 1. Verify document version was created
+        # ---------------------------------------------------------
+
         assert version.version_number == 1
         assert version.is_current is True
+
+        # ---------------------------------------------------------
+        # 2. Verify HTML was parsed correctly
+        # ---------------------------------------------------------
 
         assert "Address Change" in version.content_text
         assert (
@@ -69,6 +78,10 @@ def test_ingestion_pipeline_loads_parses_and_persists_html(
         assert "console.log" not in version.content_text
         assert "Footer content" not in version.content_text
 
+        # ---------------------------------------------------------
+        # 3. Verify document version was persisted
+        # ---------------------------------------------------------
+
         saved_version = db.execute(
             select(DocumentVersion).where(
                 DocumentVersion.id == version.id
@@ -76,6 +89,34 @@ def test_ingestion_pipeline_loads_parses_and_persists_html(
         ).scalar_one()
 
         assert saved_version.content_hash == version.content_hash
+
+        # ---------------------------------------------------------
+        # 4. Verify chunks were created
+        # ---------------------------------------------------------
+
+        chunks = db.execute(
+            select(Chunk)
+            .where(
+                Chunk.document_version_id == version.id
+            )
+            .order_by(Chunk.chunk_index)
+        ).scalars().all()
+
+        assert len(chunks) > 0
+
+        # ---------------------------------------------------------
+        # 5. Verify every chunk has an embedding
+        # ---------------------------------------------------------
+
+        for chunk in chunks:
+            assert chunk.embedding is not None
+
+        # ---------------------------------------------------------
+        # 6. Verify embeddings have the expected dimensions
+        # ---------------------------------------------------------
+
+        for chunk in chunks:
+            assert len(chunk.embedding) == 384
 
     finally:
         source = db.execute(

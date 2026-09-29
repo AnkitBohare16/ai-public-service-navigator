@@ -11,6 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+from pgvector.sqlalchemy import Vector
 
 
 class Chunk(Base):
@@ -43,6 +44,11 @@ class Chunk(Base):
     content: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+    
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(384),
+        nullable=True,
     )
 
     section_title: Mapped[str | None] = mapped_column(

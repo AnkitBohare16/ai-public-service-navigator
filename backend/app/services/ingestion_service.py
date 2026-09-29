@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.document import Document, DocumentVersion
-from app.models.source import Source
-
 from app.ingestion.chunkers.text_chunker import TextChunker
 from app.models.chunk import Chunk
+from app.models.document import Document, DocumentVersion
+from app.models.source import Source
+from app.services.embedding_service import EmbeddingService
 
 
 class IngestionService:
@@ -16,9 +16,16 @@ class IngestionService:
         self,
         db: Session,
         chunker: TextChunker | None = None,
+        embedding_service: EmbeddingService | None = None,
     ):
         self.db = db
+
         self.chunker = chunker or TextChunker()
+
+        self.embedding_service = (
+            embedding_service
+            or EmbeddingService()
+        )
 
     def ingest(
         self,
@@ -68,7 +75,6 @@ class IngestionService:
 
         if current_version is not None:
             current_version.is_current = False
-
             next_version_number = (
                 current_version.version_number + 1
             )
@@ -89,10 +95,86 @@ class IngestionService:
         source.last_checked_at = now
 
         self.db.commit()
-
         self.db.refresh(new_version)
 
         return new_version
+
+    def create_chunks(
+        self,
+        document_version: DocumentVersion,
+    ) -> list[Chunk]:
+        existing_chunks = self.db.execute(
+            select(Chunk)
+            .where(
+                Chunk.document_version_id
+                == document_version.id
+            )
+            .order_by(Chunk.chunk_index)
+        ).scalars().all()
+
+        if existing_chunks:
+            return existing_chunks
+
+        text = document_version.content_text or ""
+
+        chunk_texts = self.chunker.chunk(text)
+
+        chunks = []
+
+        for index, chunk_text in enumerate(chunk_texts):
+            chunk = Chunk(
+                document_version_id=document_version.id,
+                chunk_index=index,
+                content=chunk_text,
+            )
+
+            self.db.add(chunk)
+            chunks.append(chunk)
+
+        self.db.commit()
+
+        for chunk in chunks:
+            self.db.refresh(chunk)
+
+        return chunks
+
+    def generate_embeddings(
+        self,
+        document_version: DocumentVersion,
+    ) -> list[Chunk]:
+        chunks = self.db.execute(
+            select(Chunk)
+            .where(
+                Chunk.document_version_id
+                == document_version.id
+            )
+            .order_by(Chunk.chunk_index)
+        ).scalars().all()
+
+        if not chunks:
+            return []
+
+        texts = [
+            chunk.content
+            for chunk in chunks
+        ]
+
+        embeddings = (
+            self.embedding_service.embed_many(texts)
+        )
+
+        for chunk, embedding in zip(
+            chunks,
+            embeddings,
+        ):
+            chunk.embedding = embedding
+
+        self.db.commit()
+
+        for chunk in chunks:
+            self.db.refresh(chunk)
+
+        return chunks
 
     def _get_or_create_source(
         self,
@@ -153,42 +235,3 @@ class IngestionService:
             self.db.flush()
 
         return document
-    
-    def create_chunks(
-        self,
-        document_version: DocumentVersion,
-    ) -> list[Chunk]:
-        existing_chunks = self.db.execute(
-            select(Chunk)
-            .where(
-                Chunk.document_version_id
-                == document_version.id
-            )
-            .order_by(Chunk.chunk_index)
-        ).scalars().all()
-
-        if existing_chunks:
-            return existing_chunks
-
-        text = document_version.content_text or ""
-
-        chunk_texts = self.chunker.chunk(text)
-
-        chunks = []
-
-        for index, chunk_text in enumerate(chunk_texts):
-            chunk = Chunk(
-                document_version_id=document_version.id,
-                chunk_index=index,
-                content=chunk_text,
-            )
-
-            self.db.add(chunk)
-            chunks.append(chunk)
-
-        self.db.commit()
-
-        for chunk in chunks:
-            self.db.refresh(chunk)
-
-        return chunks

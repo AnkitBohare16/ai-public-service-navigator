@@ -7,10 +7,18 @@ from app.services.ingestion_service import IngestionService
 
 
 class IngestionPipeline:
-    def __init__(self, db: Session):
+    def __init__(
+        self,
+        db: Session,
+        ingestion_service: IngestionService | None = None,
+    ):
         self.loader = WebPageLoader()
         self.parser = HTMLParser()
-        self.ingestion_service = IngestionService(db)
+
+        self.ingestion_service = (
+            ingestion_service
+            or IngestionService(db)
+        )
 
     def ingest_url(
         self,
@@ -25,7 +33,7 @@ class IngestionPipeline:
 
         text = self.parser.parse(html)
 
-        return self.ingestion_service.ingest(
+        document_version = self.ingestion_service.ingest(
             url=url,
             organization=organization,
             title=title,
@@ -34,3 +42,13 @@ class IngestionPipeline:
             is_official=is_official,
             content=text,
         )
+
+        self.ingestion_service.create_chunks(
+            document_version
+        )
+
+        self.ingestion_service.generate_embeddings(
+            document_version
+        )
+
+        return document_version
