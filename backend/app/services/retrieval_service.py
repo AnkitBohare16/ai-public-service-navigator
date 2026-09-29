@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.chunk import Chunk
 from app.models.document import DocumentVersion
+from app.rag.reranker import Reranker
 from app.services.embedding_service import EmbeddingService
 
 
@@ -11,12 +12,18 @@ class RetrievalService:
         self,
         db: Session,
         embedding_service: EmbeddingService | None = None,
+        reranker: Reranker | None = None,
     ):
         self.db = db
 
         self.embedding_service = (
             embedding_service
             or EmbeddingService()
+        )
+
+        self.reranker = (
+            reranker
+            or Reranker()
         )
 
     def search(
@@ -40,6 +47,11 @@ class RetrievalService:
             query_embedding
         )
 
+        # Retrieve more candidates than the final
+        # number of results so the reranker has
+        # additional evidence to evaluate.
+        candidate_k = max(top_k * 2, 10)
+
         statement = (
             select(
                 Chunk,
@@ -55,17 +67,17 @@ class RetrievalService:
                 DocumentVersion.is_current.is_(True),
             )
             .order_by(distance)
-            .limit(top_k)
+            .limit(candidate_k)
         )
 
         rows = self.db.execute(statement).all()
 
-        results = []
+        candidates = []
 
         for chunk, chunk_distance in rows:
             similarity = 1.0 - float(chunk_distance)
 
-            results.append(
+            candidates.append(
                 {
                     "chunk_id": str(chunk.id),
                     "document_version_id": str(
@@ -78,4 +90,8 @@ class RetrievalService:
                 }
             )
 
-        return results
+        return self.reranker.rerank(
+            query=query,
+            results=candidates,
+            top_k=top_k,
+        )
