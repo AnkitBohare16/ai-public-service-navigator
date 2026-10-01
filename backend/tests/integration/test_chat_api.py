@@ -56,6 +56,14 @@ def test_chat_api_returns_grounded_answer(monkeypatch):
                     "similarity": 0.91,
                 }
             ],
+            "reliability": {
+                "status": "high",
+                "score": 0.91,
+                "reason": (
+                    "Reliability is based on source authority, "
+                    "retrieval similarity, and source freshness."
+                ),
+            },
         }
         
     monkeypatch.setattr(

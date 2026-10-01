@@ -57,6 +57,8 @@ class FakeCitationService:
                 "section_title": "Required Documents",
                 "page_number": 4,
                 "similarity": 0.91,
+                "freshness_status": "fresh",
+                "age_days": 5.0,
             }
         ]
 

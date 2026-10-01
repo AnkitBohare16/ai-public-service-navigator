@@ -4,12 +4,17 @@ from app.schemas.citation import Citation
 from app.schemas.search import SearchResult
 
 
+class Reliability(BaseModel):
+    status: str
+    score: float
+    reason: str
+
+
 class ChatRequest(BaseModel):
     query: str = Field(
         min_length=1,
         description="Natural-language public-service question.",
     )
-
     top_k: int = Field(
         default=5,
         ge=1,
@@ -23,3 +28,4 @@ class ChatResponse(BaseModel):
     answer: str
     evidence: list[SearchResult]
     citations: list[Citation]
+    reliability: Reliability
