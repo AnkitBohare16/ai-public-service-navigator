@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.schemas.chat import ChatRequest, ChatResponse
+from app.schemas.citation import Citation
 from app.schemas.search import SearchResult
 from app.services.generation_service import GenerationService
 
@@ -34,5 +35,9 @@ async def chat(
         evidence=[
             SearchResult(**item)
             for item in result["evidence"]
+        ],
+        citations=[
+            Citation(**item)
+            for item in result["citations"]
         ],
     )

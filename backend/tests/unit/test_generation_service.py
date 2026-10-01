@@ -39,6 +39,26 @@ class FakeAnswerGenerator:
             "Applicants must provide proof of address."
         )
 
+class FakeCitationService:
+    def build_citations(
+        self,
+        evidence: list[dict],
+    ) -> list[dict]:
+        return [
+            {
+                "chunk_id": "chunk-1",
+                "document_version_id": "version-1",
+                "organization": "Test Government Department",
+                "source_title": "Test Government Website",
+                "url": "https://example.gov/test",
+                "is_official": True,
+                "document_version": 1,
+                "retrieved_at": "2026-01-01T00:00:00",
+                "section_title": "Required Documents",
+                "page_number": 4,
+                "similarity": 0.91,
+            }
+        ]
 
 def test_generation_service_orchestrates_rag_flow():
     service = GenerationService(
@@ -46,6 +66,7 @@ def test_generation_service_orchestrates_rag_flow():
         retrieval_service=FakeRetrievalService(),
         prompt_builder=FakePromptBuilder(),
         answer_generator=FakeAnswerGenerator(),
+        citation_service=FakeCitationService(),
     )
 
     result = service.generate(
@@ -79,6 +100,7 @@ def test_generation_service_returns_message_without_evidence():
         retrieval_service=EmptyRetrievalService(),
         prompt_builder=FakePromptBuilder(),
         answer_generator=FakeAnswerGenerator(),
+        citation_service=FakeCitationService(),
     )
 
     result = service.generate(
@@ -99,6 +121,7 @@ def test_generation_service_rejects_empty_query():
         retrieval_service=FakeRetrievalService(),
         prompt_builder=FakePromptBuilder(),
         answer_generator=FakeAnswerGenerator(),
+        citation_service=FakeCitationService(),
     )
 
     try:

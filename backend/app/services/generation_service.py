@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.rag.answer_generator import AnswerGenerator
 from app.rag.prompt_builder import PromptBuilder
+from app.services.citation_service import CitationService
 from app.services.llm_client import OpenAILLMClient
 from app.services.retrieval_service import RetrievalService
 
@@ -13,6 +14,7 @@ class GenerationService:
         retrieval_service: RetrievalService | None = None,
         prompt_builder: PromptBuilder | None = None,
         answer_generator: AnswerGenerator | None = None,
+        citation_service: CitationService | None = None,
     ):
         self.retrieval_service = (
             retrieval_service
@@ -29,6 +31,11 @@ class GenerationService:
             or AnswerGenerator(
                 OpenAILLMClient()
             )
+        )
+
+        self.citation_service = (
+            citation_service
+            or CitationService(db)
         )
 
     def generate(
@@ -54,6 +61,7 @@ class GenerationService:
                     "answer this question."
                 ),
                 "evidence": [],
+                "citations": [],
             }
 
         prompt = self.prompt_builder.build(
@@ -65,7 +73,12 @@ class GenerationService:
             prompt
         )
 
+        citations = self.citation_service.build_citations(
+            evidence
+        )
+
         return {
             "answer": answer,
             "evidence": evidence,
+            "citations": citations,
         }

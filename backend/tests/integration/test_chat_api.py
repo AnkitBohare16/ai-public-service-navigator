@@ -39,8 +39,23 @@ def test_chat_api_returns_grounded_answer(monkeypatch):
                     "similarity": 0.91,
                 }
             ],
+            "citations": [
+                {
+                    "chunk_id": "chunk-1",
+                    "document_version_id": "version-1",
+                    "organization": "Test Government Department",
+                    "source_title": "Address Change Guide",
+                    "url": "https://example.gov/address",
+                    "is_official": True,
+                    "document_version": 1,
+                    "retrieved_at": "2026-01-01T00:00:00",
+                    "section_title": "Required Documents",
+                    "page_number": 4,
+                    "similarity": 0.91,
+                }
+            ],
         }
-
+        
     monkeypatch.setattr(
         GenerationService,
         "__init__",

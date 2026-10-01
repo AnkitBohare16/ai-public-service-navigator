@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from app.schemas.citation import Citation
 from app.schemas.search import SearchResult
 
 
@@ -21,3 +22,4 @@ class ChatResponse(BaseModel):
     query: str
     answer: str
     evidence: list[SearchResult]
+    citations: list[Citation]
