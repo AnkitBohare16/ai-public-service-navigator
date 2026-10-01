@@ -22,12 +22,7 @@ def test_citation_service_builds_citation_from_evidence():
     document_version_id = str(uuid4())
     chunk_id = str(uuid4())
 
-    retrieved_at = datetime(
-        2026,
-        1,
-        1,
-        tzinfo=timezone.utc,
-    )
+    retrieved_at = datetime.now(timezone.utc)
 
     row = SimpleNamespace(
         id=document_version_id,
@@ -67,6 +62,11 @@ def test_citation_service_builds_citation_from_evidence():
     assert citation["is_official"] is True
     assert citation["document_version"] == 2
     assert citation["retrieved_at"] == retrieved_at
+
+    assert citation["freshness_status"] == "fresh"
+    assert citation["age_days"] is not None
+    assert citation["age_days"] < 1
+
     assert citation["section_title"] == "Required Documents"
     assert citation["page_number"] == 4
     assert citation["similarity"] == 0.91
@@ -89,12 +89,7 @@ def test_citation_service_skips_missing_document_version():
     row = SimpleNamespace(
         id=existing_document_version_id,
         version_number=1,
-        retrieved_at=datetime(
-            2026,
-            1,
-            1,
-            tzinfo=timezone.utc,
-        ),
+        retrieved_at=datetime.now(timezone.utc),
         organization="Test Government Department",
         source_title="Test Guide",
         url="https://example.gov/test",
@@ -124,16 +119,14 @@ def test_citation_service_preserves_multiple_evidence_items():
     first_version_id = str(uuid4())
     second_version_id = str(uuid4())
 
+    first_retrieved_at = datetime.now(timezone.utc)
+    second_retrieved_at = datetime.now(timezone.utc)
+
     rows = [
         SimpleNamespace(
             id=first_version_id,
             version_number=1,
-            retrieved_at=datetime(
-                2026,
-                1,
-                1,
-                tzinfo=timezone.utc,
-            ),
+            retrieved_at=first_retrieved_at,
             organization="Department A",
             source_title="Guide A",
             url="https://example.gov/a",
@@ -142,12 +135,7 @@ def test_citation_service_preserves_multiple_evidence_items():
         SimpleNamespace(
             id=second_version_id,
             version_number=3,
-            retrieved_at=datetime(
-                2026,
-                2,
-                1,
-                tzinfo=timezone.utc,
-            ),
+            retrieved_at=second_retrieved_at,
             organization="Department B",
             source_title="Guide B",
             url="https://example.gov/b",
@@ -183,7 +171,14 @@ def test_citation_service_preserves_multiple_evidence_items():
 
     assert citations[0]["organization"] == "Department A"
     assert citations[0]["document_version"] == 1
+    assert citations[0]["is_official"] is True
+    assert citations[0]["freshness_status"] == "fresh"
+    assert citations[0]["age_days"] is not None
+    assert citations[0]["age_days"] < 1
 
     assert citations[1]["organization"] == "Department B"
     assert citations[1]["document_version"] == 3
     assert citations[1]["is_official"] is False
+    assert citations[1]["freshness_status"] == "fresh"
+    assert citations[1]["age_days"] is not None
+    assert citations[1]["age_days"] < 1

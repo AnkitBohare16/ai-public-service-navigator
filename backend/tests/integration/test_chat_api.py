@@ -49,6 +49,8 @@ def test_chat_api_returns_grounded_answer(monkeypatch):
                     "is_official": True,
                     "document_version": 1,
                     "retrieved_at": "2026-01-01T00:00:00",
+                    "freshness_status": "fresh",
+                    "age_days": 0.0,
                     "section_title": "Required Documents",
                     "page_number": 4,
                     "similarity": 0.91,
