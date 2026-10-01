@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     )
 
     llm_api_key: str | None = None
+    llm_model: str = "openai/gpt-oss-120b"
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+
     embedding_api_key: str | None = None
 
     model_config = SettingsConfigDict(
