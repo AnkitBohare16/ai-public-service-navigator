@@ -117,6 +117,53 @@ export default function Home() {
                 </p>
               </div>
 
+              {/* Retrieved Evidence Section */}
+              <div className="mt-6">
+                <h3 className="text-base font-semibold text-gray-900">
+                  Retrieved Evidence
+                </h3>
+
+                <div className="mt-3 space-y-3">
+                  {chatResponse.evidence.map((item) => (
+                    <div
+                      key={item.chunk_id}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                    >
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-gray-700">
+                        {item.content}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
+                        <span>
+                          Relevance:{" "}
+                          <span className="font-medium text-gray-700">
+                            {(item.similarity * 100).toFixed(1)}%
+                          </span>
+                        </span>
+
+                        {item.section_title && (
+                          <span>
+                            Section:{" "}
+                            <span className="font-medium text-gray-700">
+                              {item.section_title}
+                            </span>
+                          </span>
+                        )}
+
+                        {item.page_number !== null && (
+                          <span>
+                            Page:{" "}
+                            <span className="font-medium text-gray-700">
+                              {item.page_number}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Sources Section */}
               <div className="mt-6">
                 <h3 className="text-base font-semibold text-gray-900">
