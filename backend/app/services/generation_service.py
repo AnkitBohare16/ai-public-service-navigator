@@ -68,13 +68,6 @@ class GenerationService:
                 "reliability": reliability,
             }
 
-        prompt = self.prompt_builder.build(
-            query=query,
-            evidence=evidence,
-        )
-
-        answer = self.answer_generator.generate(prompt)
-
         citations = self.citation_service.build_citations(
             evidence
         )
@@ -83,6 +76,25 @@ class GenerationService:
             evidence=evidence,
             citations=citations,
         )
+
+        if reliability["status"] == "low":
+            return {
+                "answer": (
+                    "The available sources do not "
+                    "provide enough information to "
+                    "answer this question."
+                ),
+                "evidence": [],
+                "citations": [],
+                "reliability": reliability,
+            }
+
+        prompt = self.prompt_builder.build(
+            query=query,
+            evidence=evidence,
+        )
+
+        answer = self.answer_generator.generate(prompt)
 
         return {
             "answer": answer,

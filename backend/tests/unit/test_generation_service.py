@@ -87,6 +87,58 @@ def test_generation_service_orchestrates_rag_flow():
         == "Applicants must provide proof of address."
     )
 
+def test_generation_service_blocks_low_reliability_evidence():
+    class WeakRetrievalService:
+        def search(
+            self,
+            query: str,
+            top_k: int = 5,
+        ) -> list[dict]:
+            return [
+                {
+                    "chunk_id": "weak-chunk",
+                    "document_version_id": "version-1",
+                    "content": "Unrelated government information.",
+                    "section_title": None,
+                    "page_number": None,
+                    "similarity": 0.27,
+                }
+            ]
+
+    class TrackingAnswerGenerator:
+        def __init__(self):
+            self.called = False
+
+        def generate(self, prompt: str) -> str:
+            self.called = True
+            return "This answer should not be generated."
+
+    answer_generator = TrackingAnswerGenerator()
+
+    service = GenerationService(
+        db=None,
+        retrieval_service=WeakRetrievalService(),
+        prompt_builder=FakePromptBuilder(),
+        answer_generator=answer_generator,
+        citation_service=FakeCitationService(),
+    )
+
+    result = service.generate(
+        query="What is the driving licence renewal fee?"
+    )
+
+    assert result["reliability"]["status"] == "low"
+    assert result["reliability"]["score"] == 0.0
+
+    assert (
+        "do not provide enough information"
+        in result["answer"]
+    )
+
+    assert result["evidence"] == []
+    assert result["citations"] == []
+
+    assert answer_generator.called is False
 
 def test_generation_service_returns_message_without_evidence():
     class EmptyRetrievalService:

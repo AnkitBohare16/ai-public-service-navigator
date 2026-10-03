@@ -6,7 +6,7 @@ class ReliabilityService:
 
     def __init__(
         self,
-        minimum_similarity: float = 0.70,
+        minimum_similarity: float = 0.65,
     ):
         if not 0.0 <= minimum_similarity <= 1.0:
             raise ValueError(
